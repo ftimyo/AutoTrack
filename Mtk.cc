@@ -115,7 +115,7 @@ void Mtk::TrackThread(boost::shared_ptr<MtkVehicleInfoReq>& vinfo) {
 		/*Media load checkpoint*/
 		load_cp_->wait();
 		if (media_cache_ == nullptr) return;
-		if (selfkill) {
+		if (!selfkill) {
 			old_fn = fn;
 			old_bb = bb;
 			media_cache_->img.copyTo(img);

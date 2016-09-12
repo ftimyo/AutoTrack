@@ -11,7 +11,7 @@ int main(int,char* argv[]) {
 	auto fback = boost::make_shared<FarnebackVehicleDetect>(mtk);
 	auto fs = boost::make_shared<FrameStream>(argv[1],mtk);
 	GUI a{mtk,fback,fs};
-	a.Start();
+	a.Start(argv[1]);
 	return 0;
 }
 

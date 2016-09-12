@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
-set(SRC_FILES main.cc FarnebackVehicleDetect.cc Mtk.cc L1APG.cpp ImageRep.cpp Public.cpp)
+set(SRC_FILES main.cc FarnebackVehicleDetect.cc Mtk.cc L1APG.cpp ImageRep.cpp Public.cpp GUI.cc)
 set(Boost_USE_STATIC_LIBS OFF) 
 set(Boost_USE_MULTITHREADED ON)
 add_compile_options(-std=c++1y)
