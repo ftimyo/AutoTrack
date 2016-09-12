@@ -7,7 +7,7 @@
 #include <cstdio>
 
 int main(int,char* argv[]) {
-	auto mtk = boost::make_shared<Mtk>();
+	auto mtk = boost::make_shared<Mtk>(2);
 	auto fback = boost::make_shared<FarnebackVehicleDetect>(mtk);
 	auto fs = boost::make_shared<FrameStream>(argv[1],mtk);
 	GUI a{mtk,fback,fs};

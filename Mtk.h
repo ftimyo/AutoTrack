@@ -62,7 +62,7 @@ struct MtkVehicleInfoReq : public MtkVehicleInfo {
 
 class Mtk : public boost::enable_shared_from_this<Mtk> {
 public:
-	Pipe<boost::shared_ptr<MtkOutput>> output;
+	ShortPipe<boost::shared_ptr<MtkOutput>> output;
 	Pipe<boost::shared_ptr<Media>> input;
 private:
 	std::atomic<uint64_t> id_pool_;
@@ -84,7 +84,7 @@ private:
 
 	boost::thread sync_thread;
 public:
-	Mtk():id_pool_{0}{}
+	Mtk(size_t outpipelen):output{outpipelen},id_pool_{0}{}
 	void StartMtk();
 	void StopMtk();
 	uint64_t GenerateID() {return ++id_pool_;}
