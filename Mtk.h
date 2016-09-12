@@ -80,7 +80,7 @@ private:
 	bool UpdateMeta();
 	void UpdateMArea();
 	void SyncThread();
-	void TrackThread(boost::shared_ptr<MtkVehicleInfoReq>&);
+	void TrackThread(boost::shared_ptr<MtkVehicleInfoReq>);
 
 	boost::thread sync_thread;
 public:

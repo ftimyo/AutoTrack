@@ -2,6 +2,7 @@
 #include "Mtk.h"
 #include "L1APG.h"
 #include <algorithm>
+#include <boost/lexical_cast.hpp>
 
 bool Mtk::UpdateMeta() {
 	boost::lock_guard<boost::mutex> lk{cmds_mux_};
@@ -46,7 +47,7 @@ void Mtk::StartMtk() {
 	track_cp_ = boost::make_shared<SpinBarrier>(1);
 	sync_thread = boost::thread{
 		[this,self](){
-			SyncThread();	
+			SyncThread();
 		}
 	};
 }
@@ -80,7 +81,7 @@ void Mtk::SyncThread() {
 				else if (m->pimg_) {
 					auto self = shared_from_this();
 					m->td_ = boost::thread{
-						[this,self,&m](){TrackThread(m);}
+						[this,self,m](){TrackThread(m);}
 					};
 				}
 			}
@@ -97,7 +98,7 @@ void Mtk::SyncThread() {
 	output.SetEOF();
 }
 
-void Mtk::TrackThread(boost::shared_ptr<MtkVehicleInfoReq>& vinfo) {
+void Mtk::TrackThread(boost::shared_ptr<MtkVehicleInfoReq> vinfo) {
 	auto& bb = vinfo->bb_;
 	auto& fn = vinfo->fn_;
 	auto& old_bb = vinfo->old_bb_;
