@@ -12,6 +12,7 @@ void FarnebackVehicleDetect::UpdateMeta() {
 	i_max_ratio_ = max_ratio_;
 	i_max_sideLen_ = max_sideLen_;
 	i_min_sideLen_ = min_sideLen_;
+	i_thresh_ = thresh_;
 }
 
 void FarnebackVehicleDetect::StartFback() {
@@ -85,9 +86,15 @@ void FarnebackVehicleDetect::MovingVehicleDetectInternal() {
 	cv::split(uflow,udxy);
 	cv::UMat mimg;
 	cv::magnitude(udxy[0],udxy[1],mimg);
-	double max,min;
-	cv::minMaxIdx(mimg,&max,&min);
-	double thresh = (max+min)/2;
+	double thresh;
+	if (i_thresh_ == 0) {
+		double max,min;
+		cv::minMaxIdx(mimg,&max,&min);
+		thresh = (max+min)/2;
+	} else {
+		thresh = i_thresh_;
+	}
+	cache_meta_cur_->motion_thresh_ = thresh;
 	cv::threshold(mimg,ubimg,thresh,255,cv::THRESH_BINARY);
 	ubimg.convertTo(ubimg,CV_8UC1);
 	cv::Mat flow;uflow.copyTo(flow);
@@ -109,4 +116,8 @@ void FarnebackVehicleDetect::SetMaxSideLen(int) {
 }
 void FarnebackVehicleDetect::SetMinSideLen(int) {
 	boost::lock_guard<boost::mutex> lk{mux_};
+}
+void FarnebackVehicleDetect::SetThresh(double thresh) {
+	boost::lock_guard<boost::mutex> lk{mux_};
+	thresh_ = thresh;
 }

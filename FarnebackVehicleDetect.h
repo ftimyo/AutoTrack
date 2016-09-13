@@ -21,6 +21,7 @@ public:
 /*Group vehicle information from the same context*/
 struct FarnebackVehicleDetectOutput : public MtkOutput{
 	std::vector<FarnebackVehicleInfo> fbvinfo;
+	double motion_thresh_;
 	FarnebackVehicleDetectOutput(MtkOutput&& input):MtkOutput{input}{}
 };
 
@@ -29,16 +30,18 @@ class FarnebackVehicleDetect:public boost::enable_shared_from_this<FarnebackVehi
 	boost::shared_ptr<FarnebackVehicleDetectOutput> cache_meta_pre_;
 	boost::shared_ptr<FarnebackVehicleDetectOutput> cache_meta_cur_;
 	boost::shared_ptr<Mtk> mtk_;
-
+	
 	int gwin_;
 	float max_ratio_;
 	int max_sideLen_;
 	int min_sideLen_;
+	double thresh_;
 
 	int i_gwin_;
 	float i_max_ratio_;
 	int i_max_sideLen_;
 	int i_min_sideLen_;
+	double i_thresh_;
 	boost::mutex mux_;
 	void UpdateMeta();
 	static const int MAX_KERNEL_LENGTH;
@@ -51,13 +54,14 @@ private:
 	void Run();
 public:
 	FarnebackVehicleDetect(boost::shared_ptr<Mtk>& mtk):mtk_{mtk},
-		gwin_{17},max_ratio_{3},max_sideLen_{100},min_sideLen_{30}{}
+		gwin_{17},max_ratio_{3},max_sideLen_{100},min_sideLen_{30},thresh_{0}{}
 	void StartFback();
 	void StopFback();
 	void SetGaussianWindow(int);
 	void SetMaxRatio(float);
 	void SetMaxSideLen(int);
 	void SetMinSideLen(int);
+	void SetThresh(double);
 	Pipe<boost::shared_ptr<FarnebackVehicleDetectOutput>> output;
 };
 #endif
