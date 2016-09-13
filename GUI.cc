@@ -1,12 +1,26 @@
 #include "GUI.h"
+void GUI::setAddAction(int,void* user) {
+	auto gui = static_cast<GUI*>(user);
+	gui->mouse_action_ = MAction::MADD;
+}
+void GUI::setDelAction(int,void* user) {
+	auto gui = static_cast<GUI*>(user);
+	gui->mouse_action_ = MAction::MDEL;
+}
+void GUI::setNop(int,void* user) {
+	auto gui = static_cast<GUI*>(user);
+	gui->mouse_action_ = MAction::NOP;
+}
 void GUI::onMouse(int event, int x, int y, int, void* user) {
 	auto gui = static_cast<GUI*>(user);
+	MAction action = gui->mouse_action_;
+	if (gui->mouse_action_ == MAction::NOP) return;
 	auto pt = cv::Point(x,y);
-	switch (event) {
-		case cv::EVENT_LBUTTONDOWN:
-		{
+	if (event == cv::EVENT_LBUTTONDOWN) {
+		if (action == MAction::MADD) {
 			gui->SendFarnebackVehicleInfo(pt);
-			break;
+		} else if (action == MAction::MDEL) {
+			gui->SendMtkKillVehicleInfo(pt);
 		}
 	}
 }
@@ -16,6 +30,19 @@ bool GUI::SendFarnebackVehicleInfo(const cv::Point& pt) {
 	for (const auto& v : info) {
 		if (v.bb_.contains(pt)) {
 			auto req = boost::make_shared<MtkVehicleInfoReq>(v.bb_,mtk_->GenerateID());
+			req->pimg_ = cache_->context;
+			mtk_->SendCmd(req);
+			return true;
+		}
+	}
+	return false;
+}
+bool GUI::SendMtkKillVehicleInfo(const cv::Point& pt) {
+	boost::lock_guard<boost::mutex> lk{mux_};
+	const auto& info = cache_->vinfo;
+	for (const auto& v : info) {
+		if (v.bb_.contains(pt)) {
+			auto req = boost::make_shared<MtkVehicleInfoReq>(v.bb_,v.id_,true);
 			req->pimg_ = cache_->context;
 			mtk_->SendCmd(req);
 			return true;
@@ -51,4 +78,7 @@ void GUI::Start(const std::string& wname) {
 void GUI::SetupGUIEnv(const std::string& wname) {
 	cv::namedWindow(wname);
 	cv::setMouseCallback(wname,GUI::onMouse,this);
+	cv::createButton("nop",GUI::setNop,this,CV_RADIOBOX,1);
+	cv::createButton("add",GUI::setAddAction,this,CV_RADIOBOX);
+	cv::createButton("del",GUI::setDelAction,this,CV_RADIOBOX);
 }
