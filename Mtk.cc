@@ -60,6 +60,7 @@ void Mtk::SyncThread() {
 	bool update_meta = true;
 	while (true) {
 		if (!input.Read(media_cache_)) {
+			media_cache_ = nullptr;
 			load_cp_->wait();
 			break;
 		}
@@ -125,7 +126,9 @@ void Mtk::TrackThread(boost::shared_ptr<MtkVehicleInfoReq> vinfo) {
 			media_cache_->img.copyTo(img);
 			fn = media_cache_->fn;
 			try {
+			std::cout << fn << " btrack" << std::endl;
 			tracker.Track(img);
+			std::cout << fn << " etrack" << std::endl;
 			} catch (...) {
 				selfkill = true;
 			}
