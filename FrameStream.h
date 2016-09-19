@@ -26,11 +26,13 @@ private:
 	bool read(cv::UMat& img) {
 		DataF buf;
 		try {
-			boost::asio::read(sk_,boost::asio::buffer(&buf,sizeof(buf)));
+			auto hsize = boost::asio::read(sk_,boost::asio::buffer(&buf,sizeof(buf)));
+			if (hsize != sizeof(buf)) return false;
 			DataF::b2l(buf.w);DataF::b2l(buf.h);DataF::b2l(buf.bar);
-			int len = (buf.w*buf.h);
+			size_t len = (buf.w*buf.h);
 			dbuf_ = new uint8_t[len];
-			boost::asio::read(sk_,boost::asio::buffer(dbuf_,len));
+			auto size = boost::asio::read(sk_,boost::asio::buffer(dbuf_,len));
+			if (size != len) return false;
 		} catch(...) {
 			return false;
 		}

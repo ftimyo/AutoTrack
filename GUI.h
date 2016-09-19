@@ -52,5 +52,5 @@ public:
 			const boost::shared_ptr<FrameStream>& fs):mtk_{mtk},fback_{fback},fs_{fs},
 			mouse_action_{MAction::NOP},motion_thresh_dv{0}{}
 
-	void Start(const std::string&);
+	void Start(const std::string& wn = "video");
 };
