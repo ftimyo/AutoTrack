@@ -29,11 +29,8 @@ private:
 			boost::asio::read(sk_,boost::asio::buffer(&buf,sizeof(buf)));
 			DataF::b2l(buf.w);DataF::b2l(buf.h);DataF::b2l(buf.bar);
 			int len = (buf.w*buf.h);
-			if (dbuf_size_ < len) {
-				dbuf_size_ = len;
-				if (dbuf_ != nullptr) delete[] dbuf_;
-				dbuf_ = new uint8_t[len];
-			}
+			dbuf_ = new uint8_t[len];
+			std::cerr << len << std::endl;
 			boost::asio::read(sk_,boost::asio::buffer(dbuf_,len));
 		} catch(...) {
 			return false;
