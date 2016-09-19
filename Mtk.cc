@@ -60,6 +60,7 @@ void Mtk::SyncThread() {
 	bool update_meta = true;
 	while (true) {
 		if (!input.Read(media_cache_)) {
+			media_cache_ = nullptr;
 			load_cp_->wait();
 			break;
 		}
