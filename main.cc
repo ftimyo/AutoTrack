@@ -7,9 +7,10 @@
 #include <cstdio>
 
 int main(int,char* argv[]) {
+	boost::asio::io_service ios;
 	auto mtk = boost::make_shared<Mtk>(1);
 	auto fback = boost::make_shared<FarnebackVehicleDetect>(mtk);
-	auto fs = boost::make_shared<FrameStream>(argv[1],mtk);
+	auto fs = boost::make_shared<FrameStream>(ios,mtk);
 	GUI a{mtk,fback,fs};
 	a.Start(argv[1]);
 	return 0;
