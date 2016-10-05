@@ -9,8 +9,11 @@
 #include <cstdio>
 #ifndef FSTREAM
 #define FSTREAM
+const size_t MTU = 1024;
 struct FrameStream : public boost::enable_shared_from_this<FrameStream>{
 private:
+	//using tcp = boost::asio::ip::tcp;
+	using udp = boost::asio::ip::udp;
 	struct DataF {
 		int32_t w;
 		int32_t h;
@@ -23,15 +26,29 @@ private:
 	};
 	uint8_t *dbuf_;
 	int dbuf_size_;
+
+	template <typename BUF>
+	size_t udpRead(const BUF& buf, size_t len) {
+		udp::endpoint sender;
+		size_t idx = 0;
+		while (idx < len) {
+			auto tlen = idx + MTU < len ? MTU : len - idx;
+			sk_.receive_from(boost::asio::buffer(buf+idx,tlen),sender);
+			idx += tlen;
+		}
+		return idx;
+	}
+
 	bool read(cv::UMat& img) {
 		DataF buf;
 		try {
-			auto hsize = boost::asio::read(sk_,boost::asio::buffer(&buf,sizeof(buf)));
+			auto hsize = udpRead(&buf,sizeof(buf));
 			if (hsize != sizeof(buf)) return false;
 			DataF::b2l(buf.w);DataF::b2l(buf.h);DataF::b2l(buf.bar);
+			std::cout << buf.w <<','<<buf.h<<std::endl;
 			size_t len = (buf.w*buf.h);
 			dbuf_ = new uint8_t[len];
-			auto size = boost::asio::read(sk_,boost::asio::buffer(dbuf_,len));
+			auto size = udpRead(dbuf_,len);
 			if (size != len) return false;
 		} catch(...) {
 			return false;
@@ -42,9 +59,8 @@ private:
 	}
 
 public:
-	using tcp = boost::asio::ip::tcp;
-	tcp::socket sk_;
-	tcp::acceptor ask_;
+	udp::socket sk_;
+	//tcp::acceptor ask_;
 	boost::shared_ptr<Mtk> mtk_;
 	boost::thread tdfs_;
 	void Run() {
@@ -62,17 +78,9 @@ public:
 	}
 public:
 	FrameStream(boost::asio::io_service& ios, const boost::shared_ptr<Mtk>& mtk):
-		sk_{ios},ask_{ios,tcp::endpoint(tcp::v4(),8888)},mtk_{mtk}{}
+		sk_{ios,udp::endpoint(udp::v4(),8888)},mtk_{mtk}{}
 
 	void Start() {
-		auto& ios = ask_.get_io_service();
-		tcp::resolver resolver(ios);
-		tcp::resolver::query query(boost::asio::ip::host_name(), "");
-		tcp::resolver::iterator iter = resolver.resolve(query);
-		tcp::resolver::iterator end;
-		tcp::endpoint ep = *iter;
-		fprintf(stderr,"%s\n",ep.address().to_string().c_str());
-		ask_.accept(sk_);
 		if (tdfs_.joinable()) return;
 		auto self = shared_from_this();
 		tdfs_ = boost::thread{

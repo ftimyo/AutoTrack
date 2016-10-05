@@ -6,7 +6,7 @@
 #include "GUI.h"
 #include <cstdio>
 
-int main(int,char* argv[]) {
+int main(int,char*[]) {
 	boost::asio::io_service ios;
 	auto mtk = boost::make_shared<Mtk>(1);
 	auto fback = boost::make_shared<FarnebackVehicleDetect>(mtk);
