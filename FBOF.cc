@@ -19,6 +19,8 @@ void FBOF::GetCC(cv::UMat& ubimg,cv::Mat&) {
 	auto& bbs = cache_meta_cur_->bbs_;
 	for (const auto& contour : contours) {
 		auto bb = cv::boundingRect(contour);
+		bb += bb.size()/2;
+		bb += bb.tl()/2;
 		/*check validity of bb*/
 		auto sideLen = std::minmax(bb.width,bb.height);
 		if (sideLen.first == 0
@@ -74,7 +76,7 @@ void FBOF::SetBypass(bool bypass) {
 void FBOF::Run() {
 	std::shared_ptr<Media> media_cache;
 	while (input.Read(media_cache)) {
-		marea_ = cv::Rect{1,1,media_cache->gray.cols-2,media_cache->gray.rows-2};
+		marea_ = cv::Rect{1,1,media_cache->img.cols-2,media_cache->img.rows-2};
 		cache_meta_cur_ = std::make_shared<BBS>(std::move(media_cache));
 
 		if (bypass_) {

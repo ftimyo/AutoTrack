@@ -18,6 +18,7 @@ struct FrameStream : public std::enable_shared_from_this<FrameStream>{
 			sp->fn = fn;
 			if (!vs_.read(sp->img)) break;
 			cv::cvtColor(sp->img,sp->gray,cv::COLOR_BGR2GRAY);
+			cv::resize(sp->gray,sp->gray,cv::Size(),0.67,0.67);
 			output.Write(sp);
 		}
 		output.SetEOF();

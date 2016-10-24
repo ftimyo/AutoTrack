@@ -59,6 +59,8 @@ void Mtk::SendCmdBBC(const BBC& bbc, bool kill) {
 void Mtk::SendCmdBBC(BBC&& bbc, bool kill) {
 	boost::lock_guard<boost::mutex> lk{cmds_mux_};
 	if (!kill) bbc.id_ = GenerateID();
+	bbc.bb_ -= bbc.bb_.size() / 3;
+	bbc.bb_ -= bbc.bb_.tl() / 3;
 	cmds_.emplace_back(std::make_shared<CmdBBC>(std::move(bbc),kill));
 }
 
@@ -145,6 +147,8 @@ void Mtk::TrackThread(std::shared_ptr<CmdBBC> cmd) {
 				selfkill = true;
 			}
 			bb = fbb2bb(tracker.GetBB());
+			bb += bb.size()/2;
+			bb += bb.tl()/2;
 			if ((bb & marea_) != bb) {
 				selfkill = true;
 			}
