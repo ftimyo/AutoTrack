@@ -49,6 +49,7 @@ public:
 public:
 	explicit FBOF(bool bypass = false):bypass_{bypass},
 		gwin_{17},max_ratio_{3},max_sideLen_{100},min_sideLen_{30},thresh_{0}{}
+	void SetBypass(bool);
 	void StartFback();
 	void StopFback();
 

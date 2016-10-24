@@ -3,11 +3,15 @@
 #include "FBOF.h"
 #include "Pipe.h"
 #include "FrameStream.h"
+#include "remote.h"
 #include <boost/atomic.hpp>
 #include <string>
 #include <sstream>
 #include <list>
 #include <memory>
+struct RtCtl {
+	uint32_t bar; 
+};
 struct GUI {
 private:
 	std::shared_ptr<Mtk> mtk_;
@@ -27,6 +31,7 @@ private:
 /*Mouse Action Begin*/
 	enum class MAction {MADD,MDEL};
 	boost::atomic<MAction> mouse_action_;
+	static void setFBOFBypass(int,void*);
 	static void setAddAction(int,void*);
 	static void setDelAction(int,void*);
 	static void onMouse(int event, int x, int y, int, void* user);
@@ -44,11 +49,20 @@ private:
 	void DrawFBOF(cv::Mat&);
 /*Draw on Canvas END*/
 
+/*Remote Control Info BEGIN*/
+	RtCtl rtctl_;
+	TCPServer<RtCtl>::SRVPtr ctlsrv_;
+	boost::thread iostd_;
+/*Remote Control Info END*/
+
 public:
 	GUI(const std::shared_ptr<Mtk>& mtk,
 			const std::shared_ptr<FBOF>& fbof,
-			const std::shared_ptr<FrameStream>& fs):mtk_{mtk},fbof_{fbof},fs_{fs},
-			mouse_action_{MAction::MADD},motion_thresh_dv{0}{}
+			const std::shared_ptr<FrameStream>& fs,
+			boost::asio::io_service& ios,
+			int port=8889):mtk_{mtk},fbof_{fbof},fs_{fs},
+			mouse_action_{MAction::MADD},motion_thresh_dv{0},
+			ctlsrv_{TCPServer<RtCtl>::makeTCPServer(ios,port)}{}
 
 	void Start(const std::string&);
 };

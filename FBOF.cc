@@ -67,6 +67,10 @@ void FBOF::CalcOF(Ts... params) {
 	return;
 }
 
+void FBOF::SetBypass(bool bypass) {
+	bypass_ = bypass;
+}
+
 void FBOF::Run() {
 	std::shared_ptr<Media> media_cache;
 	while (input.Read(media_cache)) {

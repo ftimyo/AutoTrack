@@ -63,6 +63,10 @@ void GUI::SendCmd(const cv::Point& pt, bool kill) {
 }
 
 void GUI::Start(const std::string& wname) {
+	iostd_ = boost::thread{[](auto& srv, auto& ctl){
+		srv->AcceptOneTimeSession(ctl);
+		srv->GetIOService().run();
+	},boost::ref(ctlsrv_),boost::ref(rtctl_)};
 	DupSplit<MediaPtr> splitpipe{fs_->output,mtk_->input,fbof_->input};
 	fbof_->StartFback();
 	mtk_->StartMtk();
@@ -85,6 +89,8 @@ void GUI::Start(const std::string& wname) {
 		cv::waitKey(1);
 	}
 	splitpipe.Stop();
+	ctlsrv_->GetIOService().stop();
+	iostd_.join();
 }
 
 void GUI::DrawMtk(cv::Mat& canvas) {
@@ -102,6 +108,10 @@ void GUI::MotionThresh(int dv, void *user) {
 	double cv = dv/10.0;
 	gui->fbof_->SetThresh(cv);
 }
+void GUI::setFBOFBypass(int check,void* user) {
+	auto gui = static_cast<GUI*>(user);
+	gui->fbof_->SetBypass(!check);
+}
 void GUI::setAddAction(int,void* user) {
 	auto gui = static_cast<GUI*>(user);
 	gui->mouse_action_ = MAction::MADD;
@@ -115,6 +125,7 @@ void GUI::SetupGUIEnv(const std::string& wname) {
 	cv::namedWindow(wname);
 	cv::moveWindow(wname,0,0);
 	cv::setMouseCallback(wname,GUI::onMouse,this);
+	cv::createButton("Sel",GUI::setFBOFBypass,this,CV_CHECKBOX,1);
 	cv::createButton("add",GUI::setAddAction,this,CV_RADIOBOX,1);
 	cv::createButton("del",GUI::setDelAction,this,CV_RADIOBOX);
 	cv::createTrackbar("Motion bar","",&motion_thresh_dv,150,GUI::MotionThresh,this);
