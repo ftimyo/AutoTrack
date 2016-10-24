@@ -10,7 +10,7 @@
 #include <list>
 #include <memory>
 struct RtCtl {
-	uint32_t bar; 
+	uint32_t bar;
 };
 struct GUI {
 private:
@@ -62,7 +62,7 @@ public:
 			boost::asio::io_service& ios,
 			int port=8889):mtk_{mtk},fbof_{fbof},fs_{fs},
 			mouse_action_{MAction::MADD},motion_thresh_dv{0},
-			ctlsrv_{TCPServer<RtCtl>::makeTCPServer(ios,port)}{}
+			ctlsrv_{TCPServer<RtCtl>::makeSRV(ios,port)}{}
 
 	void Start(const std::string&);
 };

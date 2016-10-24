@@ -6,8 +6,8 @@ struct TCPServerSession : public std::enable_shared_from_this<TCPServerSession<T
 	using Session = TCPServerSession<T>;
 	using SessionPtr = std::shared_ptr<Session>;
 	template <typename... Ts>
-	static auto makeTCPServerSession(Ts&&... params) {
-		return SessionPtr{new TCPServerSession{std::forward<Ts>(params)...}};
+	static auto makeSession(Ts&&... params) {
+		return SessionPtr{new Session{std::forward<Ts>(params)...}};
 	}
 	void AsyncOneTimeRead(T& msg) {
 		auto self{this->shared_from_this()};
@@ -26,8 +26,8 @@ public:
 	using SRV = TCPServer<T>;
 	using SRVPtr = std::shared_ptr<SRV>;
 	template <typename... Ts>
-	static auto makeTCPServer(Ts&&... params) {
-		return SRVPtr{new TCPServer{std::forward<Ts>(params)...}};
+	static auto makeSRV(Ts&&... params) {
+		return SRVPtr{new SRV{std::forward<Ts>(params)...}};
 	}
 	boost::asio::io_service& GetIOService() {
 		return ask_.get_io_service();
@@ -37,7 +37,7 @@ public:
 		auto self{this->shared_from_this()};
 		ask_.async_accept(sk_,[&msg=msg,self,this](auto ec){
 					if (ec) return;
-					auto session = TCPServerSession<T>::makeTCPServerSession(std::move(sk_));
+					auto session = TCPServerSession<T>::makeSession(std::move(sk_));
 					session->AsyncOneTimeRead(msg);
 					AcceptOneTimeSession(msg);
 				});
