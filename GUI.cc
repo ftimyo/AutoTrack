@@ -125,7 +125,7 @@ void GUI::SetupGUIEnv(const std::string& wname) {
 	cv::namedWindow(wname);
 	cv::moveWindow(wname,0,0);
 	cv::setMouseCallback(wname,GUI::onMouse,this);
-	cv::createButton("Sel",GUI::setFBOFBypass,this,CV_CHECKBOX,1);
+	cv::createButton("Sel",GUI::setFBOFBypass,this,CV_CHECKBOX,0);
 	cv::createButton("add",GUI::setAddAction,this,CV_RADIOBOX,1);
 	cv::createButton("del",GUI::setDelAction,this,CV_RADIOBOX);
 	cv::createTrackbar("Motion bar","",&motion_thresh_dv,150,GUI::MotionThresh,this);
