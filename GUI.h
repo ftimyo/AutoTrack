@@ -1,27 +1,32 @@
 /*@author Timothy Yo (Yang You)*/
 #include "Mtk.h"
-#include "FarnebackVehicleDetect.h"
+#include "FBOF.h"
+#include "Pipe.h"
 #include "FrameStream.h"
-#include <atomic>
+#include <boost/atomic.hpp>
 #include <string>
 #include <sstream>
 #include <list>
+#include <memory>
 struct GUI {
 private:
-	boost::shared_ptr<Mtk> mtk_;
-	boost::shared_ptr<FarnebackVehicleDetect> fback_;
-	boost::shared_ptr<FrameStream> fs_;
+	std::shared_ptr<Mtk> mtk_;
+	std::shared_ptr<FBOF> fbof_;
+	std::shared_ptr<FrameStream> fs_;
 
 	boost::mutex mux_;
-	boost::shared_ptr<FarnebackVehicleDetectOutput> cache_;
-	void UpdateCache(const boost::shared_ptr<FarnebackVehicleDetectOutput>&);
-	bool SendFarnebackVehicleInfo(const cv::Point&);
-	bool SendMtkKillVehicleInfo(const cv::Point&);
+	std::shared_ptr<MSG> mtk_cache_;
+	std::shared_ptr<MSG> fbof_cache_;
+
+	template <typename T>
+	void UpdateCache(T&&, T&&);
+	std::shared_ptr<MSG> GetMtkMSG();
+	std::shared_ptr<MSG> GetFBOFMSG();
+	void SendCmd(const cv::Point&,bool=false);
 
 /*Mouse Action Begin*/
-	enum class MAction {NOP,MADD,MDEL};
-	std::atomic<MAction> mouse_action_;
-	static void setNop(int,void*);
+	enum class MAction {MADD,MDEL};
+	boost::atomic<MAction> mouse_action_;
 	static void setAddAction(int,void*);
 	static void setDelAction(int,void*);
 	static void onMouse(int event, int x, int y, int, void* user);
@@ -32,25 +37,18 @@ private:
 	static void MotionThresh(int,void*);
 /*Motion Thresh END*/
 
-/*Display Param BEGIN*/
-	std::list<std::string> out_;
-	cv::Mat vconsole_;
-	void ShowVConsole();
-/*Display Param END*/
-
-/*Text ON Image BEGIN*/
-	static std::string MtkInfo2StringID(const MtkVehicleInfo&);
-	static std::string MtkInfo2StringMotion(const MtkVehicleInfo&v);
-	static void Tag(cv::Mat&, const cv::Rect&, const std::string&);
-/*Text ON Image END*/
-
 	void SetupGUIEnv(const std::string&);
 
+/*Draw on Canvas BEGIN*/
+	void DrawMtk(cv::Mat&);
+	void DrawFBOF(cv::Mat&);
+/*Draw on Canvas END*/
+
 public:
-	GUI(const boost::shared_ptr<Mtk>& mtk,
-			const boost::shared_ptr<FarnebackVehicleDetect>& fback,
-			const boost::shared_ptr<FrameStream>& fs):mtk_{mtk},fback_{fback},fs_{fs},
-			mouse_action_{MAction::NOP},motion_thresh_dv{0}{}
+	GUI(const std::shared_ptr<Mtk>& mtk,
+			const std::shared_ptr<FBOF>& fbof,
+			const std::shared_ptr<FrameStream>& fs):mtk_{mtk},fbof_{fbof},fs_{fs},
+			mouse_action_{MAction::MADD},motion_thresh_dv{0}{}
 
 	void Start(const std::string&);
 };

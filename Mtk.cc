@@ -2,20 +2,48 @@
 #include "Mtk.h"
 #include "L1APG.h"
 #include <algorithm>
-#include <boost/lexical_cast.hpp>
-#include <boost/chrono.hpp>
+
+class SpinBarrier {
+private:
+	unsigned const count_;
+	boost::atomic<unsigned> spaces_;
+	boost::atomic<unsigned> generation_;
+public:
+	explicit SpinBarrier(unsigned count):
+		count_{count}, spaces_{count}, generation_{0}{}
+	void wait() {
+		unsigned const tc_generation = generation_;
+		if (!--spaces_) {
+			spaces_ = count_;
+			++generation_;
+		} else {
+			while (generation_ == tc_generation) boost::this_thread::yield();
+		}
+	}
+};
+
+struct CmdBBC : public BBC {
+	bool kill_;
+	boost::thread td_;
+	CmdBBC(const BBC& bbc, bool kill): BBC{bbc},kill_{kill}{}
+	CmdBBC(BBC&& bbc, bool kill): BBC{std::move(bbc)},kill_{kill}{}
+	CmdBBC(const CmdBBC&) = default;
+	CmdBBC(CmdBBC&&) = default;
+	CmdBBC& operator= (const CmdBBC&) = default;
+	CmdBBC& operator= (CmdBBC&&) = default;
+};
 
 bool Mtk::UpdateMeta() {
 	boost::lock_guard<boost::mutex> lk{cmds_mux_};
-	if (cmds_.size() == 0) return false;
+	if (cmds_.empty()) return false;
 	for (const auto& cmd : cmds_) {
 		auto id = cmd->id_;
 		auto p = std::find_if(std::begin(meta_),std::end(meta_),
-				[id](const boost::shared_ptr<MtkVehicleInfoReq>& x) {
-					return x->id_ == id;
+				[id](const auto& m) {
+					return m->id_ == id;
 				});
 		if (p == std::end(meta_)) {
-			meta_.push_back(cmd);
+			meta_.emplace_back(std::move(cmd));
 		} else {
 			(*p)->kill_ = cmd->kill_;
 		}
@@ -24,28 +52,21 @@ bool Mtk::UpdateMeta() {
 	return true;
 }
 
-void Mtk::SendMAreaCmd(const cv::Rect& marea) {
-	boost::lock_guard<boost::mutex> lk{marea_mux_};
-	marea_cmd_ = marea;
-}
-void Mtk::UpdateMArea() {
-	boost::lock_guard<boost::mutex> lk{marea_mux_};
-	if (marea_cmd_.width < (varea_.width >> 2) ||
-			marea_cmd_.height < (varea_.height >> 2)) return;
-	marea_ = marea_cmd_;
-	marea_ &= varea_;
-}
-
-void Mtk::SendCmd(const boost::shared_ptr<MtkVehicleInfoReq>& req) {
+void Mtk::SendCmdBBC(const BBC& bbc, bool kill) {
 	boost::lock_guard<boost::mutex> lk{cmds_mux_};
-	cmds_.push_back(req);
+	cmds_.emplace_back(std::make_shared<CmdBBC>(bbc,kill));
+}
+void Mtk::SendCmdBBC(BBC&& bbc, bool kill) {
+	boost::lock_guard<boost::mutex> lk{cmds_mux_};
+	if (!kill) bbc.id_ = GenerateID();
+	cmds_.emplace_back(std::make_shared<CmdBBC>(std::move(bbc),kill));
 }
 
 void Mtk::StartMtk() {
 	if (sync_thread.joinable()) return;
 	auto self = shared_from_this();
-	load_cp_ = boost::make_shared<SpinBarrier>(1);
-	track_cp_ = boost::make_shared<SpinBarrier>(1);
+	load_cp_ = std::make_shared<SpinBarrier>(1);
+	track_cp_ = std::make_shared<SpinBarrier>(1);
 	sync_thread = boost::thread{
 		[this,self](){
 			SyncThread();
@@ -64,25 +85,21 @@ void Mtk::SyncThread() {
 			load_cp_->wait();
 			break;
 		}
-		varea_ = cv::Rect{1,1,media_cache_->img.cols-2,media_cache_->img.rows-2};
-		marea_ = varea_;
-		UpdateMArea();
+		marea_ = cv::Rect{1,1,media_cache_->img.cols-2,media_cache_->img.rows-2};
 		/*Media load checkpoint*/
 		load_cp_->wait();
 		update_meta = UpdateMeta();
 		if (update_meta) {
 			auto cnt = std::count_if(std::begin(meta_),std::end(meta_),
-					[](const auto& x){return !x->kill_;});
-			load_cp_ = boost::make_shared<SpinBarrier>(cnt + 1);
+					[](const auto& m){return !m->kill_;});
+			load_cp_ = std::make_shared<SpinBarrier>(cnt + 1);
 		}
-		if (meta_.empty()) 
-			boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
 		/*Tracking checkpoint*/
 		track_cp_->wait();
 		if (update_meta) {
 			for (auto& m : meta_) {
 				if (m->kill_ && m->td_.joinable()){m->td_.join();}
-				else if (m->pimg_) {
+				else if (m->context_) {
 					auto self = shared_from_this();
 					m->td_ = boost::thread{
 						[this,self,m](){TrackThread(m);}
@@ -90,29 +107,29 @@ void Mtk::SyncThread() {
 				}
 			}
 			meta_.erase(
-					remove_if(std::begin(meta_),std::end(meta_),[](const auto& x){return x->kill_;}),
+					remove_if(std::begin(meta_),std::end(meta_),[](const auto& m){return m->kill_;}),
 					std::end(meta_));
-			track_cp_ = boost::make_shared<SpinBarrier>(meta_.size() + 1);
+			track_cp_ = std::make_shared<SpinBarrier>(meta_.size() + 1);
 		}
-		auto out = boost::make_shared<MtkOutput>();
-		out->marea = marea_; out->varea = varea_; out->context = media_cache_;
-		for (auto& m : meta_) {out->vinfo.emplace_back(*m);}
-		output.Write(out);
+		auto out = std::make_shared<MSG>(
+				std::make_shared<BBS>(std::move(media_cache_)),
+				std::move(bbs_cache_)
+				);
+		bbs_cache_ = out->cur_;
+		auto& bbs = bbs_cache_->bbs_;
+		for (auto& m : meta_) {bbs.emplace_back(*m);}
+		output.WriteBlocking(std::move(out));
 	}
 	output.SetEOF();
 }
 
-void Mtk::TrackThread(boost::shared_ptr<MtkVehicleInfoReq> vinfo) {
-	auto& bb = vinfo->bb_;
-	auto& fn = vinfo->fn_;
-	auto& old_bb = vinfo->old_bb_;
-	auto& old_fn = vinfo->old_fn_;
-	auto& kill = vinfo->kill_;
+void Mtk::TrackThread(std::shared_ptr<CmdBBC> cmd) {
+	auto& bb = cmd->bb_;
+	auto& kill = cmd->kill_;
 
-	cv::Mat img; vinfo->pimg_->img.copyTo(img);
+	cv::Mat img; cmd->context_->gray.copyTo(img);
+	cmd->context_ = nullptr;
 	auto selfkill = false;
-	old_fn = vinfo->pimg_->fn;
-	vinfo->pimg_ = nullptr;
 	auto tracker = L1APG {bb2fbb(bb),img,false};
 	tracker.IntializeTpl(img);
 
@@ -121,14 +138,9 @@ void Mtk::TrackThread(boost::shared_ptr<MtkVehicleInfoReq> vinfo) {
 		load_cp_->wait();
 		if (media_cache_ == nullptr) return;
 		if (!selfkill) {
-			old_fn = fn;
-			old_bb = bb;
-			media_cache_->img.copyTo(img);
-			fn = media_cache_->fn;
+			media_cache_->gray.copyTo(img);
 			try {
-			std::cout << fn << " btrack" << std::endl;
 			tracker.Track(img);
-			std::cout << fn << " etrack" << std::endl;
 			} catch (...) {
 				selfkill = true;
 			}
@@ -141,8 +153,7 @@ void Mtk::TrackThread(boost::shared_ptr<MtkVehicleInfoReq> vinfo) {
 		track_cp_->wait();
 		if (kill) break;
 		if (selfkill) {
-			auto req = boost::make_shared<MtkVehicleInfoReq>(bb,vinfo->id_,true);
-			SendCmd(req);
+			SendCmdBBC(*cmd,true);
 		}
 	}
 }
