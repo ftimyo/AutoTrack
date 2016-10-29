@@ -62,7 +62,10 @@ void FBOF::CalcOF(Ts... params) {
 	/*Get Motion Binary image*/
 	cv::UMat ubimg;
 	cv::threshold(mimg,ubimg,thresh,255,cv::THRESH_BINARY);
-	ubimg.convertTo(ubimg,CV_8UC1);
+	/*Convert Binary image to single Channel*/
+	cv::UMat tmp;
+	ubimg.convertTo(tmp,CV_8UC1);
+	std::swap(ubimg,tmp);
 	cv::Mat flow;uflow.copyTo(flow);
 
 	GetCC(ubimg,flow);

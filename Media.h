@@ -1,6 +1,7 @@
 /*@author Timothy Yo (Yang You)*/
 #include <opencv2/opencv.hpp>
 #include <cstdio>
+#include <memory>
 #ifndef MEDIA_H
 #define MEDIA_H
 struct Media {
@@ -45,7 +46,7 @@ struct BBS {
 	BBS(BBS&&) = default;
 	BBS& operator= (const BBS&) = default;
 	BBS& operator= (BBS&&) = default;
-	void RemoveOverlap(const BBS& bbs) {
+	void RemoveOverlap(BBS& bbs) {
 		auto& bbs2 = bbs.bbs_;
 		bbs_.erase(
 			remove_if(std::begin(bbs_),std::end(bbs_),
