@@ -39,7 +39,7 @@ public:
 					if (ec) return;
 					auto session = TCPServerSession<T>::makeSession(std::move(sk_));
 					session->AsyncOneTimeRead(msg);
-					AcceptOneTimeSession(msg);
+					this->AcceptOneTimeSession(msg);
 				});
 	}
 private:
