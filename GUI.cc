@@ -105,8 +105,23 @@ void GUI::DrawFBOF(cv::Mat& canvas) {
 }
 void GUI::MotionThresh(int dv, void *user) {
 	auto gui = static_cast<GUI*>(user);
-	double cv = dv/10.0;
-	gui->fbof_->SetThresh(cv);
+	gui->motion_thresh_dv = gui->fbof_->SetThresh(dv);
+}
+void GUI::SetMaxSideLen(int len,void *user) {
+	auto gui = static_cast<GUI*>(user);
+	gui->maxlen_ = gui->fbof_->SetMaxSideLen(len);
+}
+void GUI::SetMinSideLen(int len,void *user) {
+	auto gui = static_cast<GUI*>(user);
+	gui->minlen_ = gui->fbof_->SetMinSideLen(len);
+}
+void GUI::SetMaxRatio(int ratio,void *user) {
+	auto gui = static_cast<GUI*>(user);
+	gui->maxratio_ = gui->fbof_->SetMaxRatio(ratio);
+}
+void GUI::SetGaussianKernel(int sz,void *user) {
+	auto gui = static_cast<GUI*>(user);
+	gui->gaussianws_ = gui->fbof_->SetGaussianWindow(sz);
 }
 void GUI::setFBOFBypass(int check,void* user) {
 	auto gui = static_cast<GUI*>(user);
@@ -128,5 +143,11 @@ void GUI::SetupGUIEnv(const std::string& wname) {
 	cv::createButton("Sel",GUI::setFBOFBypass,this,CV_CHECKBOX,0);
 	cv::createButton("add",GUI::setAddAction,this,CV_RADIOBOX,1);
 	cv::createButton("del",GUI::setDelAction,this,CV_RADIOBOX);
-	cv::createTrackbar("Motion bar","",&motion_thresh_dv,150,GUI::MotionThresh,this);
+	cv::createTrackbar("Motion bar","",&motion_thresh_dv,FBOF::MAX_THRESH,GUI::MotionThresh,this);
+#if 1
+	cv::createTrackbar("Mx SLen","",&maxlen_,FBOF::SIDELEN_MAX,GUI::SetMaxSideLen,this);
+	cv::createTrackbar("Mm SLen","",&minlen_,FBOF::SIDELEN_MAX,GUI::SetMinSideLen,this);
+	cv::createTrackbar("Mx Ratio","",&maxratio_,FBOF::MAX_RATIO_MAX,GUI::SetMaxRatio,this);
+	cv::createTrackbar("GK","",&gaussianws_,FBOF::MAX_KERNEL_LENGTH,GUI::SetGaussianKernel,this);
+#endif
 }

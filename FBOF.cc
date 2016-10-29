@@ -4,8 +4,12 @@
 #include <algorithm>
 #include "Stopwatch.h"
 #include <cstdio>
-const int FBOF::MAX_KERNEL_LENGTH = 31;
-const int FBOF::MIN_KERNEL_LENGTH = 3;
+constexpr int FBOF::MAX_KERNEL_LENGTH = 31;
+constexpr int FBOF::MIN_KERNEL_LENGTH = 3;
+constexpr int FBOF::MAX_RATIO_MAX = 5;
+constexpr int FBOF::SIDELEN_MAX = 500;
+constexpr int FBOF::SIDELEN_MIN = 1;
+constexpr int FBOF::MAX_THRESH = 150;
 
 template <typename T>
 static double CalcRatio(T x, T y) {
@@ -98,25 +102,39 @@ void FBOF::Run() {
 	output.SetEOF();
 }
 
-void FBOF::SetGaussianWindow(int win) {
-	boost::lock_guard<boost::mutex> lk{mux_};
-	if (win < MIN_KERNEL_LENGTH) win = 3;
+int FBOF::SetGaussianWindow(int win) {
+	if (win < MIN_KERNEL_LENGTH) win = MIN_KERNEL_LENGTH;
 	if (win % 2 == 0) win += 1;
-	if (win > MAX_KERNEL_LENGTH) win = 31;
+	if (win > MAX_KERNEL_LENGTH) win = MAX_KERNEL_LENGTH;
+	boost::lock_guard<boost::mutex> lk{mux_};
 	gwin_ = win;
+	return gwin_;
 }
-void FBOF::SetMaxRatio(float) {
+int FBOF::SetMaxRatio(int ratio) {
+	if (ratio < 1) ratio = 1;
+	if (ratio > MAX_RATIO_MAX) ratio = MAX_RATIO_MAX;
 	boost::lock_guard<boost::mutex> lk{mux_};
+	max_ratio_ = ratio;
+	return max_ratio_;
 }
-void FBOF::SetMaxSideLen(int) {
+int FBOF::SetMaxSideLen(int xlen) {
+	if (xlen > SIDELEN_MAX) xlen = SIDELEN_MAX;
+	if (xlen < SIDELEN_MIN) xlen = SIDELEN_MIN;
 	boost::lock_guard<boost::mutex> lk{mux_};
+	max_sideLen_ = xlen;
+	return max_sideLen_;
 }
-void FBOF::SetMinSideLen(int) {
+int FBOF::SetMinSideLen(int mlen) {
+	if (mlen > SIDELEN_MAX) mlen = SIDELEN_MAX;
+	if (mlen < SIDELEN_MIN) mlen = SIDELEN_MIN;
 	boost::lock_guard<boost::mutex> lk{mux_};
+	min_sideLen_ = mlen;
+	return min_sideLen_;
 }
-void FBOF::SetThresh(double thresh) {
+int FBOF::SetThresh(int thresh) {
 	boost::lock_guard<boost::mutex> lk{mux_};
-	thresh_ = thresh;
+	thresh_ = thresh / 10.0;
+	return thresh;
 }
 
 void FBOF::UpdateMeta() {

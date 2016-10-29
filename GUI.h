@@ -42,6 +42,14 @@ private:
 	static void MotionThresh(int,void*);
 /*Motion Thresh END*/
 
+/*OBJ Criteria BEGIN*/
+	int maxlen_,minlen_,maxratio_,gaussianws_;
+	static void SetMaxSideLen(int,void*);
+	static void SetMinSideLen(int,void*);
+	static void SetMaxRatio(int,void*);
+	static void SetGaussianKernel(int,void*);
+/*OBJ Criteria END*/
+
 	void SetupGUIEnv(const std::string&);
 
 /*Draw on Canvas BEGIN*/
@@ -62,6 +70,10 @@ public:
 			boost::asio::io_service& ios,
 			int port=8889):mtk_{mtk},fbof_{fbof},fs_{fs},
 			mouse_action_{MAction::MADD},motion_thresh_dv{0},
+			maxlen_{FBOF::SIDELEN_MAX},
+			minlen_{FBOF::SIDELEN_MIN},
+			maxratio_{FBOF::MAX_RATIO_MAX},
+			gaussianws_{FBOF::MIN_KERNEL_LENGTH},
 			ctlsrv_{TCPServer<RtCtl>::makeSRV(ios,port)}{}
 
 	void Start(const std::string&);

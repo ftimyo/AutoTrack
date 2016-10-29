@@ -18,9 +18,15 @@ class FBOF:public std::enable_shared_from_this<FBOF>{
 	bool bypass_;
 
 /*Start Two-level Meta Control Info*/
+public:
 	static const int MAX_KERNEL_LENGTH;
 	static const int MIN_KERNEL_LENGTH;
+	static const int MAX_RATIO_MAX;
+	static const int SIDELEN_MAX;
+	static const int SIDELEN_MIN;
+	static const int MAX_THRESH;
 
+private:
 	int gwin_;
 	float max_ratio_;
 	int max_sideLen_;
@@ -54,10 +60,10 @@ public:
 	void StopFback();
 
 /*User Interface*/
-	void SetGaussianWindow(int);
-	void SetMaxRatio(float);
-	void SetMaxSideLen(int);
-	void SetMinSideLen(int);
-	void SetThresh(double);
+	int SetGaussianWindow(int);
+	int SetMaxRatio(int);
+	int SetMaxSideLen(int);
+	int SetMinSideLen(int);
+	int SetThresh(int);
 };
 #endif
