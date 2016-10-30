@@ -55,7 +55,7 @@ void FBOF::CalcOF(Ts... params) {
 
 	/*Update Thresh, if 0, using mean value*/
 	double thresh;
-	if (i_thresh_ == 0) {
+	if (i_thresh_ < 0.01) {
 		double max,min;
 		cv::minMaxIdx(mimg,&max,&min);
 		thresh = (max+min)/2;
@@ -101,7 +101,10 @@ void FBOF::Run() {
 	}
 	output.SetEOF();
 }
-
+double FBOF::SpeedToPixel(int speed, int height) {
+	if (height == 0) height = 10;
+	return speed / height;
+}
 int FBOF::SetGaussianWindow(int win) {
 	if (win < MIN_KERNEL_LENGTH) win = MIN_KERNEL_LENGTH;
 	if (win % 2 == 0) win += 1;
@@ -131,9 +134,9 @@ int FBOF::SetMinSideLen(int mlen) {
 	min_sideLen_ = mlen;
 	return min_sideLen_;
 }
-int FBOF::SetThresh(int thresh) {
+int FBOF::SetThresh(int thresh, int height) {
 	boost::lock_guard<boost::mutex> lk{mux_};
-	thresh_ = thresh / 10.0;
+	thresh_ = SpeedToPixel(thresh,height);
 	return thresh;
 }
 

@@ -105,7 +105,7 @@ void GUI::DrawFBOF(cv::Mat& canvas) {
 }
 void GUI::MotionThresh(int dv, void *user) {
 	auto gui = static_cast<GUI*>(user);
-	gui->motion_thresh_dv = gui->fbof_->SetThresh(dv);
+	gui->motion_thresh_dv = gui->fbof_->SetThresh(dv,gui->rtctl_.bar);
 }
 void GUI::SetMaxSideLen(int len,void *user) {
 	auto gui = static_cast<GUI*>(user);

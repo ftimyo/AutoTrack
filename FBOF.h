@@ -60,10 +60,11 @@ public:
 	void StopFback();
 
 /*User Interface*/
+	static double SpeedToPixel(int,int);
 	int SetGaussianWindow(int);
 	int SetMaxRatio(int);
 	int SetMaxSideLen(int);
 	int SetMinSideLen(int);
-	int SetThresh(int);
+	int SetThresh(int,int=10);
 };
 #endif
