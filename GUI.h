@@ -12,6 +12,34 @@
 struct RtCtl {
 	uint32_t bar;
 };
+struct Console {
+	using strs = std::stringstream;
+	cv::Mat canvas_;
+	std::vector<strs> cache_;
+	cv::Scalar color_;
+	decltype(auto) NewEntry() {
+		cache_.emplace_back();
+		return cache_.back();
+	}
+	decltype(auto) GetLastEntry() {
+		if (cache_.empty()) return NewEntry();
+		return cache_.back();
+	}
+	inline void Show() {
+		canvas_ = cv::Mat::zeros(canvas_.size(),CV_8UC3);
+		auto font = cv::fontQt("Times",16,color_);
+		int step = 50, y = 0;
+		for (const auto& s : cache_) {
+			cv::addText(canvas_,s.str() + '\n', cv::Point(50,y += step), font);
+		}
+		cache_.clear();
+		cv::imshow("console", canvas_);
+	}
+	explicit Console(cv::Size&& sz = cv::Size(600,800),
+			cv::Scalar&& color = cv::Scalar(200,200,200)):
+		canvas_{std::move(sz),CV_8UC3},color_{std::move(color)}{}
+};
+
 struct GUI {
 private:
 	std::shared_ptr<Mtk> mtk_;
@@ -35,6 +63,8 @@ private:
 	static void setAddAction(int,void*);
 	static void setDelAction(int,void*);
 	static void onMouse(int event, int x, int y, int, void* user);
+	static void Tag(cv::Mat&, const cv::Rect&, const std::stringstream&, const cv::Scalar&);
+	static double PixelToSpeed(cv::Point pixel,int height);
 /*Mouse Action END*/
 
 /*Motion Thresh BEGIN*/
@@ -63,6 +93,10 @@ private:
 	boost::thread iostd_;
 /*Remote Control Info END*/
 
+/*Console Simulate Display BEGIN*/
+	std::unique_ptr<Console> con_;
+/*Console Simulate Display END*/
+
 public:
 	GUI(const std::shared_ptr<Mtk>& mtk,
 			const std::shared_ptr<FBOF>& fbof,
@@ -74,7 +108,8 @@ public:
 			minlen_{FBOF::SIDELEN_MIN},
 			maxratio_{FBOF::MAX_RATIO_MAX},
 			gaussianws_{FBOF::MIN_KERNEL_LENGTH},
-			ctlsrv_{TCPServer<RtCtl>::makeSRV(ios,port)}{}
+			ctlsrv_{TCPServer<RtCtl>::makeSRV(ios,port)},
+			con_{std::make_unique<Console>(cv::Size(300,600),cv::Scalar(0,255,0))}{}
 
 	void Start(const std::string&);
 };

@@ -1,4 +1,6 @@
 #include "GUI.h"
+#include <cmath>
+#include <cstdlib>
 /*BB with motion vector*/
 struct MBB : public BB {
 	cv::Point2f v_;
@@ -48,6 +50,18 @@ void GUI::onMouse(int event, int x, int y, int, void* user) {
 		}
 	}
 }
+
+double GUI::PixelToSpeed(cv::Point pixel,int height) {
+	if (height == 0) height = 10;
+	return std::sqrt(pixel.x*pixel.x+pixel.y*pixel.y) * height;
+}
+void GUI::Tag(cv::Mat& canvas, const cv::Rect& bb,
+		const std::stringstream& ss, const cv::Scalar& color) {
+	auto pt = bb.tl() - cv::Point(10,bb.height/2);
+	auto font = cv::fontQt("Times",bb.width/2, color);
+	cv::addText(canvas,ss.str(),pt, font);
+}
+
 void GUI::SendCmd(const cv::Point& pt, bool kill) {
 	auto mtkm = GetMtkMSG();
 	auto bfofm = GetFBOFMSG();
@@ -83,9 +97,12 @@ void GUI::Start(const std::string& wname) {
 		fbof_cache_->cur_->RemoveOverlap(*mtk_cache_->cur_);
 		if (mtk_cache_->old_) mbbs.BuildMBBS(*mtk_cache_->cur_,*mtk_cache_->old_);
 		mtk_cache_->cur_->context_->img.copyTo(canvas);
+		auto& ss = con_->NewEntry();
+		ss << "Barometer: " << rtctl_.bar;
 		DrawMtk(canvas);
 		DrawFBOF(canvas);
 		cv::imshow(wname,canvas);
+		con_->Show();
 		cv::waitKey(1);
 	}
 	splitpipe.Stop();
@@ -95,7 +112,17 @@ void GUI::Start(const std::string& wname) {
 
 void GUI::DrawMtk(cv::Mat& canvas) {
 	for (auto& b : mtk_cache_->cur_->bbs_) {
-		cv::rectangle(canvas,b.bb_,cv::Scalar(0,0,255),2);
+		auto p = std::find_if(begin(mtk_cache_->old_->bbs_),
+				end(mtk_cache_->old_->bbs_),[id = b.id_](const auto& v){
+					return v.id_ == id;
+				});
+		if (p == end(mtk_cache_->old_->bbs_)) continue;
+		std::stringstream ss; ss << "ID: " << b.id_;
+		auto& entry = con_->NewEntry();
+		entry << ss.str() <<"\tSpeed: "<<PixelToSpeed(b.bb_.tl() - p->bb_.tl(),rtctl_.bar);
+		auto color = cv::Scalar(0,255,0);
+		Tag(canvas,b.bb_,ss,color);
+		cv::rectangle(canvas,b.bb_,color,2);
 	}
 }
 void GUI::DrawFBOF(cv::Mat& canvas) {
@@ -144,10 +171,8 @@ void GUI::SetupGUIEnv(const std::string& wname) {
 	cv::createButton("add",GUI::setAddAction,this,CV_RADIOBOX,1);
 	cv::createButton("del",GUI::setDelAction,this,CV_RADIOBOX);
 	cv::createTrackbar("Motion bar","",&motion_thresh_dv,FBOF::MAX_THRESH,GUI::MotionThresh,this);
-#if 1
 	cv::createTrackbar("Mx SLen","",&maxlen_,FBOF::SIDELEN_MAX,GUI::SetMaxSideLen,this);
 	cv::createTrackbar("Mm SLen","",&minlen_,FBOF::SIDELEN_MAX,GUI::SetMinSideLen,this);
 	cv::createTrackbar("Mx Ratio","",&maxratio_,FBOF::MAX_RATIO_MAX,GUI::SetMaxRatio,this);
 	cv::createTrackbar("GK","",&gaussianws_,FBOF::MAX_KERNEL_LENGTH,GUI::SetGaussianKernel,this);
-#endif
 }
