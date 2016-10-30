@@ -27,7 +27,7 @@ struct Console {
 	}
 	inline void Show() {
 		canvas_ = cv::Mat::zeros(canvas_.size(),CV_8UC3);
-		auto font = cv::fontQt("Times",16,color_);
+		auto font = cv::fontQt("",16,color_);
 		int step = 50, y = 0;
 		for (const auto& s : cache_) {
 			cv::addText(canvas_,s.str() + '\n', cv::Point(50,y += step), font);

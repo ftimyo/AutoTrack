@@ -58,7 +58,7 @@ double GUI::PixelToSpeed(cv::Point pixel,int height) {
 void GUI::Tag(cv::Mat& canvas, const cv::Rect& bb,
 		const std::stringstream& ss, const cv::Scalar& color) {
 	auto pt = bb.tl() - cv::Point(10,bb.height/2);
-	auto font = cv::fontQt("Times",bb.width/2, color);
+	auto font = cv::fontQt("",bb.width/2, color);
 	cv::addText(canvas,ss.str(),pt, font);
 }
 
