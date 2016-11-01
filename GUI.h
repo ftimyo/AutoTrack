@@ -10,7 +10,7 @@
 #include <list>
 #include <memory>
 struct RtCtl {
-	uint32_t bar{0};
+	uchar bar{0};
 };
 struct Console {
 	using strs = std::stringstream;

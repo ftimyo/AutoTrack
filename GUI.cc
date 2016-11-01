@@ -98,7 +98,7 @@ void GUI::Start(const std::string& wname) {
 		if (mtk_cache_->old_) mbbs.BuildMBBS(*mtk_cache_->cur_,*mtk_cache_->old_);
 		mtk_cache_->cur_->context_->img.copyTo(canvas);
 		auto& ss = con_->NewEntry();
-		ss << "Barometer: " << rtctl_.bar;
+		ss << "Barometer: " << (int)rtctl_.bar;
 		DrawMtk(canvas);
 		DrawFBOF(canvas);
 		cv::imshow(wname,canvas);
