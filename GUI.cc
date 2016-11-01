@@ -24,6 +24,9 @@ struct MBBS {
 		}
 	}
 };
+constexpr float GUI::tan4470 = 0.99f;
+constexpr float GUI::vradius = 734.30f;
+constexpr float GUI::ms2mph = 2.24f;
 template <typename T>
 void GUI::UpdateCache(T&& mtk_tmp, T&& fbof_tmp) {
 	boost::lock_guard<boost::mutex> lk{mux_};
@@ -51,9 +54,11 @@ void GUI::onMouse(int event, int x, int y, int, void* user) {
 	}
 }
 
-double GUI::PixelToSpeed(cv::Point pixel,int height) {
-	if (height == 0) height = 10;
-	return std::sqrt(pixel.x*pixel.x+pixel.y*pixel.y) * height;
+double GUI::PixelToMeter(cv::Point pixel,int height) {
+	if (height == 0) height = 120;
+	auto rradius = height * tan4470;
+	auto pdist = std::sqrt(pixel.x*pixel.x+pixel.y*pixel.y);
+	return pdist * rradius / vradius;
 }
 void GUI::Tag(cv::Mat& canvas, const cv::Rect& bb,
 		const std::stringstream& ss, const cv::Scalar& color) {
@@ -111,19 +116,35 @@ void GUI::Start(const std::string& wname) {
 }
 
 void GUI::DrawMtk(cv::Mat& canvas) {
+	auto& old = mtk_old_bbs_cache_;
 	for (auto& b : mtk_cache_->cur_->bbs_) {
-		auto p = std::find_if(begin(mtk_cache_->old_->bbs_),
-				end(mtk_cache_->old_->bbs_),[id = b.id_](const auto& v){
-					return v.id_ == id;
-				});
-		if (p == end(mtk_cache_->old_->bbs_)) continue;
-		std::stringstream ss; ss << "ID: " << b.id_;
+		auto p = std::find_if(begin(old),end(old),[id=b.id_](const auto& v){
+					return v.first.id_ == id;
+					});
+		if (p == end(old)) {
+			old.emplace_back(BBC{b,mtk_cache_->cur_->context_},0);
+			continue;
+		}
 		auto& entry = con_->NewEntry();
-		entry << ss.str() <<"\tSpeed: "<<PixelToSpeed(b.bb_.tl() - p->bb_.tl(),rtctl_.bar);
+		std::stringstream ss; ss << "ID: " << b.id_;
+		auto ofn = p->first.context_->fn;
+		auto nfn = mtk_cache_->cur_->context_->fn;
+		auto fnd = nfn - ofn;
+		if (15 < fnd) {
+			auto t = fnd/30.0f;
+			p->second = PixelToMeter(b.bb_.tl() - p->first.bb_.tl(),rtctl_.bar)/t*ms2mph;
+			p->first = BBC{b,mtk_cache_->cur_->context_};
+		}
+		entry << ss.str() <<"\tSpeed: "<< p->second << " MPH";
 		auto color = cv::Scalar(0,255,0);
 		Tag(canvas,b.bb_,ss,color);
 		cv::rectangle(canvas,b.bb_,color,2);
 	}
+	old.erase(std::copy_if(begin(old),end(old),begin(old),
+			[&bbs=mtk_cache_->cur_->bbs_](const auto& v){
+				return find_if(begin(bbs),end(bbs),
+						[id=v.first.id_](const auto& x){return x.id_ == id;}) != std::end(bbs);
+			}),std::end(old));
 }
 void GUI::DrawFBOF(cv::Mat& canvas) {
 	for (auto& b : fbof_cache_->cur_->bbs_) {

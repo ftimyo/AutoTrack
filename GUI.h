@@ -42,12 +42,16 @@ struct Console {
 
 struct GUI {
 private:
+	static const float tan4470;
+	static const float vradius;
+	static const float ms2mph;
 	std::shared_ptr<Mtk> mtk_;
 	std::shared_ptr<FBOF> fbof_;
 	std::shared_ptr<FrameStream> fs_;
 
 	boost::mutex mux_;
 	std::shared_ptr<MSG> mtk_cache_;
+	std::vector<std::pair<BBC,float>> mtk_old_bbs_cache_;
 	std::shared_ptr<MSG> fbof_cache_;
 
 	template <typename T>
@@ -64,7 +68,7 @@ private:
 	static void setDelAction(int,void*);
 	static void onMouse(int event, int x, int y, int, void* user);
 	static void Tag(cv::Mat&, const cv::Rect&, const std::stringstream&, const cv::Scalar&);
-	static double PixelToSpeed(cv::Point pixel,int height);
+	static double PixelToMeter(cv::Point pixel,int height);
 /*Mouse Action END*/
 
 /*Motion Thresh BEGIN*/

@@ -119,7 +119,7 @@ void Mtk::SyncThread() {
 				);
 		bbs_cache_ = out->cur_;
 		auto& bbs = bbs_cache_->bbs_;
-		for (auto& m : meta_) {bbs.emplace_back(*m);}
+		for (auto& m : meta_) {if (m->context_ == nullptr)bbs.emplace_back(*m);}
 		output.WriteBlocking(std::move(out));
 	}
 	output.SetEOF();
@@ -138,6 +138,7 @@ void Mtk::TrackThread(std::shared_ptr<CmdBBC> cmd) {
 	while (true) {
 		/*Media load checkpoint*/
 		load_cp_->wait();
+		cmd->context_ = nullptr;
 		if (media_cache_ == nullptr) return;
 		if (!selfkill) {
 			media_cache_->gray.copyTo(img);
